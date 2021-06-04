@@ -1,72 +1,50 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios'
 import _ from 'lodash';
 
-import { setUserSession, removeUserSession } from '../utils/';
+import {
+  saveUser,
+  loginUser,
+  setUserSession,
+  removeUserSession,
+  getTasks,
+  create,
+  update,
+  remove,
+  verifyToken,
+} from '../utils/';
+
 import { validateEmail, validatePassword } from '../utils/validators';
 
 export const useFetchTaskList = (user) => {
   const [status, setStatus] = useState("loading");
-  const [list, setList] = useState([
-    {id: 1, title: "hi", description: "", priority: "Important"},
-    {id: 2, title: "hello", priority: "Urgently"},
-  ]);
-  const [error, setError] = useState();
+  const [list, setList] = useState([]);
 
   useEffect(() => {
-    //   axios.get(`/todos/${user.id}`)
-    //     .then(response => {
+    setList(getTasks(user));
     setStatus("successLoading");
-    //       setList(response.list);
-    //     })
-    //     .catch(error => {
-    //       setStatus("failureLoading");
-    //       setError(error);
-    //     });
   }, []);
 
-  const addTask = (task) => {
-    axios.post(`/todos/${user.id}/task`, task)
-      .then((response) => {
-        setList([...list, response.task]);
-      })
-      .catch(setError);
+  const createTask = (task) => {
+    create(task, user);
+    setList(getTasks(user));
   };
 
   const updateTask = (task) => {
-    axios.update(`/todos/${user.id}/task`, task)
-      .then((response) => {
-        const newList = list.map(task => {
-          if (task.id === response.task.id) {
-            return response.task;
-          }
-
-          return task;
-        });
-
-        setList(newList);
-      })
-      .catch(setError);
+    update(task, user);
+    setList(getTasks(user));
   };
 
   const removeTask = (task) => {
-    axios.delete(`/todos/${user.id}/task`, task)
-      .then((response) => {
-        const newList = list
-          .filter(task => task.id !== response.task.id);
-
-        setList(newList);
-      })
-      .catch(setError);
+    remove(task, user);
+    setList(getTasks(user));
   };
 
   return {
     list,
     status,
-    addTask,
+    createTask,
     updateTask,
     removeTask,
-    error,
   };
 }
 
@@ -78,16 +56,14 @@ export const useLogin = (token) => {
       return;
     }
 
-    axios.get(`/verifyToken?token=${token}`)
-      .then(response => {
-        setUserSession(response.data.token, response.data.user);
-      })
-      .catch(() => {
-        removeUserSession();
-      })
-      .then(() =>{
-        setAuthLoading(false);
-      });
+    const { token: newToken, user } = verifyToken(token);
+    if (newToken) {
+      setUserSession(newToken, user);
+    } else {
+      removeUserSession(false);
+    }
+
+    setAuthLoading(false);
   }, []);
 
   return authLoading;
@@ -122,20 +98,22 @@ export const useRegistrationForm = () => {
     }
 
     if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Password do not match";
+      newErrors.confirmPassword = "The password doesn't match";
     }
 
     if (!_.isEmpty(newErrors)) {
       setErrors(newErrors);
-    } else {
-      axios.post("/users", {})
-        .then(() => {
-          setIsRegistered(true);
-        })
-        .catch((error) => {
-          setErrors({ message: error.message });
-        });
+      return;
     }
+
+    const result = saveUser({ email, password });
+    if (result.error) {
+      console.log(result);
+      setErrors(result.error);
+      return;
+    }
+
+    setIsRegistered(true);
   };
 
   return {
@@ -174,14 +152,14 @@ export const useLoginForm = () => {
     if (!_.isEmpty(newErrors)) {
       setErrors(newErrors);
     } else {
-      axios.post("/login", { email, password })
-        .then((response) => {
-          setUserSession(response.token, response.user);
-          setIsLogged(true);
-        })
-        .catch((error) => {
-          setErrors({ message: error.message });
-        });
+      const result = loginUser({ email, password });
+
+      if (result.error) {
+        setErrors(result.error);
+      } else {
+        setUserSession(result.token, result.user);
+        setIsLogged(true);
+      }
     }
   };
 

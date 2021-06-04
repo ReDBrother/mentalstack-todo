@@ -1,7 +1,24 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
+import { setUserSession } from './utils';
 
-test('renders learn react link', () => {
+test('renders ToDo list', async () => {
+  setUserSession(1234, { email: "mentalstack@cool.ru" });
   render(<App />);
-  // expect(linkElement).toBeInTheDocument();
+
+  await waitFor(() => {
+    const button = screen.getByLabelText("new-task-submit");
+    expect(button).toBeInTheDocument();
+  })
+
+  const button = screen.getByLabelText("new-task-submit");
+  const input = screen.getByLabelText("new-task-title-input");
+
+  fireEvent.change(input, { target: { value: "Hello World!" } });
+  fireEvent.click(button);
+
+  await waitFor(() => {
+    expect(input.value).toBe("");
+    expect(screen.getByDisplayValue("Hello World!")).toBeInTheDocument();
+  })
 });

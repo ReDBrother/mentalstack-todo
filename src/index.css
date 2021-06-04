@@ -11,3 +11,15 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.ms-time-dropdown {
+  min-width: 0rem;
+}
+
+.ms-tasks-list > * {
+  border-bottom: 1px solid silver;
+}
+
+.ms-tasks-list > *:last-child {
+  border: 0;
+}

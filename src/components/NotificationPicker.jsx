@@ -1,30 +1,35 @@
-import { Dropdown, Badge } from 'react-bootstrap';
+import { forwardRef } from 'react';
+import { Dropdown } from 'react-bootstrap';
+import { faBell } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+
+import { getNotificationTitle } from '../utils/';
 
 const notifications = [5, 30, 60, 60 * 3, 60 * 24, 60 * 24 * 7];
 
-const notificationsToStr = {
-  5: "5 min.",
-  30: "30 min.",
-  60: "1 hour.",
-  [60 * 3]: "3 hours.",
-  [60 * 24]: "1 day.",
-  [60 * 24 * 7]: "1 week.",
-};
+const Icon = forwardRef(({ onClick }, ref) => (
+  <div className="px-1" onClick={onClick} ref={ref}>
+    <FontAwesomeIcon icon={faBell} />
+  </div>
+));
 
 const DropdownNotificationItem = ({ value }) => (
   <Dropdown.Item eventKey={value}>
-    <Badge variant={notificationsToStr[value]}>""</Badge>
+    {getNotificationTitle(value)}
   </Dropdown.Item>
 );
 
 const NotificationPicker = ({ value, onChange }) => (
   <Dropdown
-    as={() => <img alt={value} src="#" />}
     id={`dropdown-variants-notification`}
     title="notifications"
-    onSelect={(eventKey) => onChange(eventKey)}
+    variant={value}
+    onSelect={(eventKey) => onChange(Number(eventKey))}
   >
-    {notifications.map((priority) => <DropdownNotificationItem value={priority} />)}
+    <Dropdown.Toggle as={Icon}></Dropdown.Toggle>
+    <Dropdown.Menu>
+      {notifications.map((notification) => <DropdownNotificationItem key={notification} value={notification} />)}
+    </Dropdown.Menu>
   </Dropdown>
 );
 

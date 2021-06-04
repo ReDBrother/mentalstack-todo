@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import DatePicker from 'react-date-picker';
-import TimePicker from 'react-time-picker';
+import { Nav } from 'react-bootstrap';
+
+import "react-datepicker/dist/react-datepicker.css";
 
 import DateList from './DateList';
+import DatePicker from './DatePicker';
+import TimePicker from './TimePicker';
 import NotificationPicker from './NotificationPicker';
 import PriorityPicker from './PriorityPicker';
 
@@ -10,13 +13,13 @@ import { useFetchTaskList } from '../hooks';
 
 import { getUser } from '../utils/';
 
-const CreateTaskComponent = ({ addTask }) => {
-  const defaultDate = new Date();
-  const defaultDueDate = "23:59";
-  const defaultNotification = 30;
-  const defaultPriority = "Neutral";
+const defaultDate = new Date();
+const defaultDueDate = { hours: 0, minutes: 0 };
+const defaultNotification = 30;
+const defaultPriority = "Neutral";
 
-  const [title, setTitle] = useState();
+const CreateTaskComponent = ({ createTask }) => {
+  const [title, setTitle] = useState("");
   const [date, setDate] = useState(defaultDate);
   const [dueDate, setDueDate] = useState(defaultDueDate);
   const [notification, setNotification] = useState(defaultNotification);
@@ -30,7 +33,7 @@ const CreateTaskComponent = ({ addTask }) => {
       return;
     }
 
-    const task = {
+    const params = {
       title,
       date,
       dueDate,
@@ -39,39 +42,70 @@ const CreateTaskComponent = ({ addTask }) => {
     };
 
     // reset form
-    setTitle();
+    setTitle("");
     setDate(defaultDate);
     setDueDate(defaultDueDate);
     setNotification(defaultNotification);
     setPriority(defaultPriority);
 
     // create new Task
-    addTask(task);
+    createTask(params);
   };
 
   return (
-    <>
-      <form onSubmit={handleCreateTask}>
-        <div className="form-group">
-          <input type="text" className="form-control" value={title} onChange={handleChangeTitle} />
-          <button className="btn btn-primary form-control" type="submit" >Send</button>
+    <div className="create-task-panel w-auto">
+      <div className="card-footer">
+        <div className="input-group flex-nowrap">
+          <input
+            type="text"
+            aria-label="new-task-title-input"
+            className="form-control"
+            value={title}
+            onChange={handleChangeTitle}
+          />
+          <button
+            name="Create Task"
+            aria-label="new-task-submit"
+            className="btn btn-primary"
+            type="submit"
+            onClick={handleCreateTask}
+          >
+            Send
+          </button>
         </div>
-        <div className="d-inline-flex p-2">
-          <DatePicker selected={date} onChange={setDate} />
-          <TimePicker value={dueDate} onChange={setDueDate} />
-          <NotificationPicker value={notification} onChange={setNotification} />
-          <PriorityPicker value={priority} onChange={setPriority} />
+        <div className="d-inline-flex align-items-baseline p-2">
+          <DatePicker
+            value={date}
+            onChange={setDate}
+          />
+          <TimePicker
+            value={dueDate}
+            onChange={setDueDate}
+          />
+          <NotificationPicker
+            value={notification}
+            onChange={setNotification} />
+          <PriorityPicker
+            value={priority}
+            onChange={setPriority}
+          />
         </div>
-      </form>
-    </>
+      </div>
+    </div>
   );
 };
 
 const TodoList = () => {
-  const [sortedRule, setSortedRule] = useState("priority");
-
+  const sortedRule = "priority";
   const user = getUser();
-  const {status, list, addTask, error} = useFetchTaskList(user);
+  const {
+    status,
+    list,
+    createTask,
+    updateTask,
+    removeTask,
+    error,
+  } = useFetchTaskList(user);
 
   if (status === "failureLoading") {
     return <div>{error.message}</div>;
@@ -81,13 +115,43 @@ const TodoList = () => {
     return <div>Loading data</div>;
   }
 
-  return (<>
-    <nav></nav>
-    <div>
-      <DateList list={list} sortedRule={sortedRule} />
-      <CreateTaskComponent addTask={addTask}/>
+  return (
+    <div className="container vh-100">
+      <div className="d-flex">
+        <Nav className="flex-column col-2 d-md-block bg-light sidebar"
+          activeKey="/home"
+        >
+          <div className="sidebar-sticky"></div>
+          <Nav.Item>
+            <Nav.Link href="/home">
+              Active
+            </Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="link-1">
+            </Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="link-2">
+            </Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="disabled" disabled>
+            </Nav.Link>
+          </Nav.Item>
+        </Nav>
+        <div className="col-10">
+          <DateList
+            tasks={list}
+            sortedRule={sortedRule}
+            updateTask={updateTask}
+            removeTask={removeTask}
+          />
+          <CreateTaskComponent createTask={createTask}/>
+        </div>
+      </div>
     </div>
-  </>);
+  );
 };
 
 export default TodoList;
