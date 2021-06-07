@@ -1,7 +1,7 @@
 import { faChevronDown, faChevronUp, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useState } from 'react';
-import {getNotificationTitle, getTimeTitle} from '../utils';
+import {Button, Modal} from 'react-bootstrap';
 import NotificationPicker from './NotificationPicker';
 import PriorityPicker from './PriorityPicker';
 import TimePicker from './TimePicker';
@@ -10,6 +10,25 @@ const days = ["Monday", "Tuesday", "Wedenesday", "Thursday", "Friday", "Saturday
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const getTaskTitle = (date) => `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`
+
+const sortByRule = (rule) => (a, b) => {
+  switch(rule) {
+    case "priority/+": return b.priority - a.priority;
+    case "priority/-": return a.priority - b.priority;
+    case "dueDate/+": {
+      const hoursDiff = a.dueDate.hours - b.dueDate.hours;
+      const minutesDiff = a.dueDate.minutes - b.dueDate.minutes;
+      return hoursDiff * 60 + minutesDiff;
+    }
+    case "dueDate/-": {
+      const hoursDiff = b.dueDate.hours - a.dueDate.hours;
+      const minutesDiff = b.dueDate.minutes - a.dueDate.minutes;
+      return hoursDiff * 60 + minutesDiff;
+    }
+    default:
+      throw new Error("Unnexpected sorted rule");
+  }
+};
 
 const DateList = ({ tasks, sortedRule, updateTask, removeTask }) => {
   const dates = tasks.reduce((acc, task) => {
@@ -35,6 +54,12 @@ const DateList = ({ tasks, sortedRule, updateTask, removeTask }) => {
         removeTask={removeTask}
       />
     });
+
+
+  if (tasks.length === 0) {
+    return <div className="mt-5 w-100 h-100 text-center">You don't have a tasks</div>
+  }
+
   return <>{components}</>;
 };
 
@@ -55,31 +80,77 @@ const DateComponent = ({ title, tasks, sortedRule, updateTask, removeTask }) => 
           </button>
         </div>
         <div className="ms-task-list">
-          {!isClosed && tasks.map(task => <Task key={task.id} task={task} updateTask={updateTask} removeTask={removeTask}/>)}
+          {!isClosed && tasks
+              .sort(sortByRule(sortedRule))
+              .map(task =>
+                <Task
+                  key={task.id}
+                  task={task}
+                  updateTask={updateTask}
+                  removeTask={removeTask}
+                />
+              )}
         </div>
       </div>
     </>
   );
 };
 
-const Task = ({ task , updateTask, removeTask }) => {
-  const [status, setStatus] = useState(task.status);
-  const { id, title, description, dueDate, notification, priority } = task;
+const RemoveTaskButton = ({ removeTask }) => {
+  const [show, setShow] = useState(false);
 
-  const toggleStatus = () => {
-    status === "done"
-      ? setStatus("waiting")
-      : setStatus("done");
-  }
+  const handleShow = () => setShow(true);
+  const handleClose = () => setShow(false);
+
+  return(<>
+    <Button
+      className="input-group-text border-0 bg-transparent"
+      aria-label="remove-task-submit"
+      onClick={handleShow}
+    >
+      <FontAwesomeIcon icon={faTrash} className="text-danger" />
+    </Button>
+    <Modal show={show} onHide={handleClose}>
+      <Modal.Header closeButton>
+        <Modal.Title>Warning</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>Are you sure you want to delete the task</Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={handleClose}>
+          Abort
+        </Button>
+        <Button variant="danger" aria-label="remove-confirm" onClick={removeTask}>
+          Delete Task
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  </>);
+
+};
+
+const Task = ({ task, updateTask, removeTask }) => {
+  const {
+    id,
+    title,
+    status,
+    description,
+    dueDate,
+    notification,
+    priority,
+  } = task;
+
+  const taskClassName = `d-flex p-2 ${ status === "done" ? "" : "" }`
 
   return (
-    <div key={id} className="d-flex p-2">
+    <div key={id} className={taskClassName}>
       <div>
         <input
           type="checkbox"
           className="me-2 mt-1"
-          name={status}
-          onChange={toggleStatus}
+          name="status"
+          onChange={() => {
+            updateTask({ id, status: status === "done" ? "ready" : "done"})
+          }}
           checked={status === "done"}
         />
       </div>
@@ -111,34 +182,28 @@ const Task = ({ task , updateTask, removeTask }) => {
             onChange={newPriority => {
               updateTask({ id, priority: newPriority });
             }}
+            view
           />
-          <span className="mx-1 me-4">{`${priority} Priority`}</span>
           <TimePicker
             value={dueDate}
             onChange={(newDueDate) => {
               updateTask({ id, dueDate: newDueDate });
             }}
+            view
           />
-          <span className="mx-1 me-4">{getTimeTitle(dueDate)}</span>
           <NotificationPicker
             value={notification}
             onChange={(newNotification) => {
               updateTask({ id, notification: newNotification });
             }}
+            view
           />
-          <span className="mx-1">{getNotificationTitle(notification)}</span>
         </div>
       </div>
       <div className="ms-auto">
-        <button
-          className="input-group-text border-0 bg-transparent"
-          data-confirm="Are you sure you want to delete the task"
-          onClick={() => {
-            removeTask({ id });
-          }}
-        >
-          <FontAwesomeIcon icon={faTrash} className="text-danger" />
-        </button>
+        <RemoveTaskButton
+          removeTask={() => removeTask({ id })}
+        />
       </div>
     </div>
   );

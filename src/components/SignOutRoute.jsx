@@ -2,13 +2,14 @@ import { Route, Redirect } from 'react-router-dom';
 
 import { getToken, removeUserSession } from '../utils/';
 
-function SignOutRoute({ component: Component, ...rest }) {
+const SignOutRoute = ({ component: Component, setToken, ...rest }) => {
   removeUserSession();
+  setToken(undefined);
 
   return (
     <Route
       {...rest}
-      render={(props) => getToken() ? <Component {...props} /> : <Redirect to={{ pathname: '/sign-in', state: { from: props.location } }} />}
+      render={(props) => getToken() ? <Component {...props} setToken={setToken}/> : <Redirect to={{ pathname: '/sign-in', state: { from: props.location } }} />}
     />
   )
 }

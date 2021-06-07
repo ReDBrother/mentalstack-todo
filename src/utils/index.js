@@ -8,7 +8,7 @@ export const getUser = () => {
 };
 
 export const loginUser = ({ email, password }) => {
-  const oldPassword = sessionStorage.getItem(`user/${email}`);
+  const oldPassword = localStorage.getItem(`user/${email}`);
   if (!oldPassword) {
     return {
       error: { email: "The user is not registered" },
@@ -26,35 +26,35 @@ export const loginUser = ({ email, password }) => {
 }
 
 export const saveUser = ({ email, password }) => {
-  const oldPassword = sessionStorage.getItem(`user/${email}`);
+  const oldPassword = localStorage.getItem(`user/${email}`);
   if (oldPassword) {
     return {
       error: { email: "The user is already registered" },
     };
   }
-  sessionStorage.setItem(`user/${email}`, password);
+  localStorage.setItem(`user/${email}`, password);
   return { email, password };
 };
 
 export const getTasks = (user) => {
-  const listStr = sessionStorage.getItem(`tasks/${user.email}`) || "[]";
+  const listStr = localStorage.getItem(`tasks/${user.id}`) || "[]";
   const parseDate = (task) => ({...task, date: new Date(task.date)});
   return JSON.parse(listStr).map((task) => parseDate(task));
 };
 
 export const create = (params, user) => {
-  const listStr = sessionStorage.getItem(`tasks/${user.email}`) || "[]";
-  const counter = sessionStorage.getItem(`counter`) || "1";
+  const listStr = localStorage.getItem(`tasks/${user.id}`) || "[]";
+  const counter = localStorage.getItem(`counter`) || "1";
 
   const id = Number(counter) + 1;
   const task = { ...params, id };
   const list = JSON.parse(listStr);
-  sessionStorage.setItem(`tasks/${user.email}`, JSON.stringify([...list, task]));
-  sessionStorage.setItem(`counter`, id);
+  localStorage.setItem(`tasks/${user.id}`, JSON.stringify([...list, task]));
+  localStorage.setItem(`counter`, id);
 };
 
 export const update = (params, user) => {
-  const listStr = sessionStorage.getItem(`tasks/${user.email}`) || "[]";
+  const listStr = localStorage.getItem(`tasks/${user.id}`) || "[]";
   const list = JSON.parse(listStr).map(oldTask => {
     if (oldTask.id === params.id) {
       return {...oldTask, ...params};
@@ -63,11 +63,11 @@ export const update = (params, user) => {
     return oldTask;
   });
 
-  sessionStorage.setItem(`tasks/${user.email}`, JSON.stringify(list));
+  localStorage.setItem(`tasks/${user.id}`, JSON.stringify(list));
 };
 
 export const remove = (params, user) => {
-  const listStr = sessionStorage.getItem(`tasks/${user.email}`) || "[]";
+  const listStr = localStorage.getItem(`tasks/${user.id}`) || "[]";
   const list = JSON.parse(listStr).reduce((acc, oldTask) => {
     if (oldTask.id === params.id) {
       return acc;
@@ -76,7 +76,7 @@ export const remove = (params, user) => {
     return [...acc, oldTask];
   }, [])
 
-  sessionStorage.setItem(`tasks/${user.email}`, JSON.stringify(list));
+  localStorage.setItem(`tasks/${user.id}`, JSON.stringify(list));
 };
 
 export const getToken = () => {
@@ -99,26 +99,3 @@ export const verifyToken = (token) => {
     user: sessionStorage.getItem('user'),
   };
 };
-
-export const getTimeTitle = (value) => {
-  return `${getTimeText(value.hours)}:${getTimeText(value.minutes)}`
-};
-
-export const getTimeText = (value) => {
-  if (value < 10) {
-    return `0${value}`;
-  }
-
-  return `${value}`;
-};
-
-const notificationsToStr = {
-  5: "5 min.",
-  30: "30 min.",
-  60: "1 hour.",
-  [60 * 3]: "3 hours.",
-  [60 * 24]: "1 day.",
-  [60 * 24 * 7]: "1 week.",
-};
-
-export const getNotificationTitle = (value) => notificationsToStr[value];

@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import _ from 'lodash';
+import { useDispatch } from 'react-redux';
+
+import { actions } from '../slices/';
 
 import {
+  getToken,
   saveUser,
   loginUser,
   setUserSession,
@@ -48,8 +52,8 @@ export const useFetchTaskList = (user) => {
   };
 }
 
-export const useLogin = (token) => {
-  const [authLoading, setAuthLoading] = useState(true);
+export const useLogin = () => {
+  const [token, setToken] = useState(getToken());
 
   useEffect(() => {
     if (!token) {
@@ -59,14 +63,16 @@ export const useLogin = (token) => {
     const { token: newToken, user } = verifyToken(token);
     if (newToken) {
       setUserSession(newToken, user);
+      setToken(newToken);
     } else {
-      removeUserSession(false);
+      removeUserSession();
     }
-
-    setAuthLoading(false);
   }, []);
 
-  return authLoading;
+  return {
+    token,
+    setToken,
+  };
 };
 
 const handleChange = (callback) => (event) => {
@@ -79,6 +85,13 @@ export const useRegistrationForm = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({});
   const [isRegistered, setIsRegistered] = useState(false);
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (isRegistered) {
+    }
+  }, [isRegistered, dispatch]);
 
   const onSubmit = (event) => {
     event.preventDefault();
@@ -108,12 +121,12 @@ export const useRegistrationForm = () => {
 
     const result = saveUser({ email, password });
     if (result.error) {
-      console.log(result);
       setErrors(result.error);
       return;
     }
 
     setIsRegistered(true);
+    dispatch(actions.setAlert({ status: "success", message: "Successful registration" }));
   };
 
   return {
@@ -126,11 +139,13 @@ export const useRegistrationForm = () => {
   };
 };
 
-export const useLoginForm = () => {
+export const useLoginForm = (setToken) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
   const [isLogged, setIsLogged] = useState(false);
+
+  const dispatch = useDispatch();
 
   const onSubmit = (event) => {
     event.preventDefault();
@@ -151,17 +166,21 @@ export const useLoginForm = () => {
 
     if (!_.isEmpty(newErrors)) {
       setErrors(newErrors);
-    } else {
-      const result = loginUser({ email, password });
-
-      if (result.error) {
-        setErrors(result.error);
-      } else {
-        setUserSession(result.token, result.user);
-        setIsLogged(true);
-      }
+      return;
     }
-  };
+
+    const result = loginUser({ email, password });
+
+    if (result.error) {
+      setErrors(result.error);
+      return;
+    }
+
+    setToken(result.token);
+    setUserSession(result.token, result.user);
+    dispatch(actions.setAlert({ status: "success", message: "Successful sign in" }));
+    setIsLogged(true);
+  }
 
   return {
     emailInputProps: { value: email, onChange: handleChange(setEmail) },

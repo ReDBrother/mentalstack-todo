@@ -1,7 +1,4 @@
-import { useState } from 'react';
-import { Nav } from 'react-bootstrap';
-
-import "react-datepicker/dist/react-datepicker.css";
+import { Fragment, useState } from 'react';
 
 import DateList from './DateList';
 import DatePicker from './DatePicker';
@@ -12,11 +9,13 @@ import PriorityPicker from './PriorityPicker';
 import { useFetchTaskList } from '../hooks';
 
 import { getUser } from '../utils/';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
 const defaultDate = new Date();
 const defaultDueDate = { hours: 0, minutes: 0 };
 const defaultNotification = 30;
-const defaultPriority = "Neutral";
+const defaultPriority = 0;
 
 const CreateTaskComponent = ({ createTask }) => {
   const [title, setTitle] = useState("");
@@ -39,6 +38,7 @@ const CreateTaskComponent = ({ createTask }) => {
       dueDate,
       notification,
       priority,
+      status: "ready",
     };
 
     // reset form
@@ -95,21 +95,49 @@ const CreateTaskComponent = ({ createTask }) => {
   );
 };
 
+const getActiveStatus = (property, orientation, currentRule) =>
+  `${property}/${orientation}` === currentRule ? "active" : "";
+
+const getPropertyTitle = (str) => str[0].toUpperCase() + str.slice(1);
+
+const SidebarPanel = ({ sortedRule, setSortedRule }) => {
+  return <ul className="col-2 list-group bg-light">
+    {["dueDate", "priority"].map((property) => {
+      return (
+        <Fragment key={property}>
+          <li
+            className={`list-group-item border-0 ${getActiveStatus(property, "+", sortedRule)}`}
+            onClick={() => setSortedRule(`${property}/+`)}
+          >
+            <p>
+              {getPropertyTitle(property)}
+              <FontAwesomeIcon className="ms-2" icon={faChevronUp}/>
+            </p>
+          </li>
+          <li
+            className={`list-group-item border-0 ${getActiveStatus(property, "-", sortedRule)}`}
+            onClick={() => setSortedRule(`${property}/-`)}
+          >
+            <p>
+              {getPropertyTitle(property)}
+              <FontAwesomeIcon className="ms-2" icon={faChevronDown}/>
+            </p>
+          </li>
+        </Fragment>
+      )})}
+  </ul>;
+}
+
 const TodoList = () => {
-  const sortedRule = "priority";
+  const [sortedRule, setSortedRule] = useState("dueDate/+");
   const user = getUser();
   const {
     status,
     list,
     createTask,
     updateTask,
-    removeTask,
-    error,
+    removeTask
   } = useFetchTaskList(user);
-
-  if (status === "failureLoading") {
-    return <div>{error.message}</div>;
-  }
 
   if (status === "loading") {
     return <div>Loading data</div>;
@@ -118,28 +146,10 @@ const TodoList = () => {
   return (
     <div className="container vh-100">
       <div className="d-flex">
-        <Nav className="flex-column col-2 d-md-block bg-light sidebar"
-          activeKey="/home"
-        >
-          <div className="sidebar-sticky"></div>
-          <Nav.Item>
-            <Nav.Link href="/home">
-              Active
-            </Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="link-1">
-            </Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="link-2">
-            </Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="disabled" disabled>
-            </Nav.Link>
-          </Nav.Item>
-        </Nav>
+        <SidebarPanel
+          sortedRule={sortedRule}
+          setSortedRule={setSortedRule}
+        />
         <div className="col-10">
           <DateList
             tasks={list}

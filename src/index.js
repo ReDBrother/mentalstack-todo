@@ -1,15 +1,27 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap';
 
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import reducers from './slices/';
+
+const reducer = combineReducers(reducers)
+
+const store = configureStore({
+  reducer,
+})
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <Provider store={store}>
+      <App />
+    </Provider>
   </React.StrictMode>,
   document.getElementById('root')
 );

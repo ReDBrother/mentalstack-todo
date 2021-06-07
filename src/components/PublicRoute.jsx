@@ -2,11 +2,11 @@ import { Route, Redirect } from 'react-router-dom';
 
 import { getToken } from '../utils/';
 
-function PublicRoute({ component: Component, ...rest }) {
+const PublicRoute = ({ component: Component, setToken, ...rest }) => {
   return (
     <Route
       {...rest}
-      render={(props) => !getToken() ? <Component {...props} /> : <Redirect to={{ pathname: '/' }} />}
+      render={(props) => !getToken() ? <Component {...props} setToken={setToken} /> : <Redirect to={{ pathname: '/' }} />}
     />
   )
 }

@@ -3,6 +3,8 @@ import ReactDatePicker from 'react-datepicker';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
+import "react-datepicker/dist/react-datepicker.css";
+
 const CustomDateInput = forwardRef(({ onClick }, ref) => (
   <div className="px-1" ref={ref} onClick={onClick}>
     <FontAwesomeIcon icon={faCalendar} />
